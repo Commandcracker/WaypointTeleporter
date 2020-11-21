@@ -8,34 +8,65 @@ using Logger = Rocket.Core.Logging.Logger;
 
 namespace WaypointTeleporter
 {
-    class CommandWaypointTP: IRocketCommand
+    public class CommandWaypointTP: IRocketCommand
     {
-        public AllowedCaller AllowedCaller => AllowedCaller.Player;
-        public string Name => "WaypointTP";
-        public string Help => "Teleports you to your Marker";
-        public string Syntax => "";
-        public List<string> Aliases => new List<string>() { "WTP" };
-        public List<string> Permissions => new List<string>() { "waypointteleport" };
-
-
-        public void Execute(IRocketPlayer caller, params string[] command)
+        public string Help
         {
-            UnturnedPlayer uCaller = (UnturnedPlayer)caller;
+            get { return "Teleports you to your Marker"; }
+        }
 
-            if (uCaller.Player.quests.isMarkerPlaced)
+        public string Name
+        {
+            get { return "WaypointTP"; }
+        }
+
+        public string Syntax
+        {
+            get { return "<WaypointTP>"; }
+        }
+
+        public bool RunFromConsole
+        {
+            get { return false; }
+        }
+        public List<string> Aliases
+        {
+            get 
+            { 
+                return new List<string>() {"WTP"}; 
+            }
+        }
+
+        public AllowedCaller AllowedCaller
+        {
+            get { return Rocket.API.AllowedCaller.Player; }
+        }
+
+        public List<string> Permissions
+        {
+            get
             {
-                Vector3 teleportLocation = GetSurface(uCaller.Player.quests.markerPosition).Value;
-                uCaller.Teleport(new Vector3(teleportLocation.x, teleportLocation.y + 3, teleportLocation.z), uCaller.Player.look.angle);
-                UnturnedChat.Say(uCaller, "Successfully teleported to your Marker.", Color.yellow);
-                Logger.LogWarning($"{uCaller.DisplayName} has teleported to their Marker {teleportLocation}.");
+                return new List<string>() { "waypointteleport" };
+            }
+        }
+        public void Execute(IRocketPlayer caller, string[] command)
+        {
+            UnturnedPlayer player = (UnturnedPlayer)caller;
+
+            if (player.Player.quests.isMarkerPlaced)
+            {
+                Vector3 teleportLocation = GetSurface(player.Player.quests.markerPosition).Value;
+                player.Teleport(new Vector3(teleportLocation.x, teleportLocation.y + 3, teleportLocation.z), player.Player.look.angle);
+                UnturnedChat.Say(player, "Successfully teleported to your Marker.", Color.yellow);
+                Logger.LogWarning($"{player.DisplayName} has teleported to their Marker {teleportLocation}.");
                 if (WaypointTeleporter.Instance.Configuration.Instance.RemoveMarkerOnTP)
                 {
-                    uCaller.Player.quests.askSetMarker(uCaller.CSteamID, false, teleportLocation);
+                    player.Player.quests.askSetMarker(player.CSteamID, false, teleportLocation);
                 }
                 
             } else
             {
-                UnturnedChat.Say(uCaller, "You need to set a Marker before using this command!", Color.red);
+                UnturnedChat.Say(caller, "You need to set a Marker before using this command!", Color.red);
                 return;
             }
         }
