@@ -11,68 +11,38 @@ namespace WaypointTeleporter
 {
     class CommandWaypointLocate : IRocketCommand
     {
-        public string Help
-        {
-            get { return "Tells you the Coordinates of your Waypoint/Marker"; }
-        }
+        public AllowedCaller AllowedCaller => AllowedCaller.Player;
+        public string Name => "WaypointLocate";
+        public string Help => "Tells you the Coordinates of your Waypoint/Marker";
+        public string Syntax => "";
+        public List<string> Aliases => new List<string>() { "WLocate" };
+        public List<string> Permissions => new List<string>() { "waypointlocate" };
 
-        public string Name
-        {
-            get { return "WaypointLocate"; }
-        }
 
-        public string Syntax
+        public void Execute(IRocketPlayer caller, params string[] command)
         {
-            get { return "<WaypointLocate>"; }
-        }
+            UnturnedPlayer uCaller = (UnturnedPlayer)caller;
 
-        public bool RunFromConsole
-        {
-            get { return false; }
-        }
-        public List<string> Aliases
-        {
-            get 
-            { 
-                return new List<string>() {"WLocate"}; 
-            }
-        }
-
-        public AllowedCaller AllowedCaller
-        {
-            get { return Rocket.API.AllowedCaller.Player; }
-        }
-
-        public List<string> Permissions
-        {
-            get
+            if (uCaller.Player.quests.isMarkerPlaced)
             {
-                return new List<string>() { "waypointlocate" };
-            }
-        }
-
-        public void Execute(IRocketPlayer caller, string[] command)
-        {
-            UnturnedPlayer player = (UnturnedPlayer)caller;
-
-            if (player.Player.quests.isMarkerPlaced)
-            {
-                Vector3 markerLocation = GetSurface(player.Player.quests.markerPosition).Value;
-                Logger.Log($"{markerLocation}", ConsoleColor.Cyan);
-                UnturnedChat.Say(player, "Marker Location (Also sent to Console):", Color.yellow);
-                UnturnedChat.Say(player, $"{markerLocation}", Color.yellow);
+                UnityEngine.Vector3? markerLocation = GetSurface(uCaller.Player.quests.markerPosition);
+                if (markerLocation != null)
+                {
+                    UnturnedChat.Say(uCaller, $"Marker Location: {markerLocation.Value}.", Color.yellow);
+                    Logger.Log($"{markerLocation.Value}", ConsoleColor.Cyan);
+                } else {
+                    UnturnedChat.Say(uCaller, $"Marker Location: {uCaller.Player.quests.markerPosition}.", Color.yellow);
+                }
             }
             else
             {
-                UnturnedChat.Say(player, "You need to set a Marker before using this command!", Color.red);
-                return;
+                UnturnedChat.Say(uCaller, "You need to set a Marker before using this command!", Color.red);
             }
         }
 
         private Vector3? GetSurface(Vector3 Position)
         {
-            int layerMasks = (RayMasks.BARRICADE | RayMasks.BARRICADE_INTERACT | RayMasks.ENEMY | RayMasks.ENTITY | RayMasks.ENVIRONMENT | RayMasks.GROUND | RayMasks.GROUND2 | RayMasks.ITEM | RayMasks.RESOURCE | RayMasks.STRUCTURE | RayMasks.STRUCTURE_INTERACT | RayMasks.WATER);
-            if (Physics.Raycast(new Vector3(Position.x, Position.y + 200, Position.z), Vector3.down, out RaycastHit Hit, 250, layerMasks))
+            if (Physics.Raycast(new Vector3(Position.x, Position.y + 1024, Position.z), Vector3.down, out RaycastHit Hit, Mathf.Infinity))
             {
                 return Hit.point;
             }

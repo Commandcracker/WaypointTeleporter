@@ -8,73 +8,44 @@ using Logger = Rocket.Core.Logging.Logger;
 
 namespace WaypointTeleporter
 {
-    public class CommandWaypointTP: IRocketCommand
+    class CommandWaypointTP: IRocketCommand
     {
-        public string Help
-        {
-            get { return "Teleports you to your Marker"; }
-        }
+        public AllowedCaller AllowedCaller => AllowedCaller.Player;
+        public string Name => "WaypointTP";
+        public string Help => "Teleports you to your Marker";
+        public string Syntax => "";
+        public List<string> Aliases => new List<string>() { "WTP" };
+        public List<string> Permissions => new List<string>() { "waypointteleport" };
 
-        public string Name
-        {
-            get { return "WaypointTP"; }
-        }
 
-        public string Syntax
+        public void Execute(IRocketPlayer caller, params string[] command)
         {
-            get { return "<WaypointTP>"; }
-        }
+            UnturnedPlayer uCaller = (UnturnedPlayer)caller;
 
-        public bool RunFromConsole
-        {
-            get { return false; }
-        }
-        public List<string> Aliases
-        {
-            get 
-            { 
-                return new List<string>() {"WTP"}; 
-            }
-        }
-
-        public AllowedCaller AllowedCaller
-        {
-            get { return Rocket.API.AllowedCaller.Player; }
-        }
-
-        public List<string> Permissions
-        {
-            get
+            if (uCaller.Player.quests.isMarkerPlaced)
             {
-                return new List<string>() { "waypointteleport" };
-            }
-        }
-        public void Execute(IRocketPlayer caller, string[] command)
-        {
-            UnturnedPlayer player = (UnturnedPlayer)caller;
-
-            if (player.Player.quests.isMarkerPlaced)
-            {
-                Vector3 teleportLocation = GetSurface(player.Player.quests.markerPosition).Value;
-                player.Teleport(new Vector3(teleportLocation.x, teleportLocation.y + 3, teleportLocation.z), player.Player.look.angle);
-                UnturnedChat.Say(player, "Successfully teleported to your Marker.", Color.yellow);
-                Logger.LogWarning($"{player.DisplayName} has teleported to their Marker {teleportLocation}.");
-                if (WaypointTeleporter.Instance.Configuration.Instance.RemoveMarkerOnTP)
+                var teleportLocation = GetSurface(uCaller.Player.quests.markerPosition);
+                if (teleportLocation != null)
                 {
-                    player.Player.quests.askSetMarker(player.CSteamID, false, teleportLocation);
+                    uCaller.Teleport(new Vector3(teleportLocation.Value.x, teleportLocation.Value.y + 1, teleportLocation.Value.z), uCaller.Player.look.angle);
+                    UnturnedChat.Say(uCaller, "Successfully teleported to your Marker.", Color.yellow);
+                    Logger.LogWarning($"{uCaller.DisplayName} has teleported to their Marker {teleportLocation.Value}.");
+                    if (WaypointTeleporter.Instance.Configuration.Instance.RemoveMarkerOnTP)
+                    {
+                        uCaller.Player.quests.askSetMarker(uCaller.CSteamID, false, teleportLocation.Value);
+                    }
+                } else {
+                    UnturnedChat.Say(uCaller, "No Location to teleport found!", Color.red);
                 }
-                
             } else
             {
-                UnturnedChat.Say(caller, "You need to set a Marker before using this command!", Color.red);
-                return;
+                UnturnedChat.Say(uCaller, "You need to set a Marker before using this command!", Color.red);
             }
         }
 
         private Vector3? GetSurface(Vector3 Position)
         {
-            int layerMasks = (RayMasks.BARRICADE | RayMasks.BARRICADE_INTERACT | RayMasks.ENEMY | RayMasks.ENTITY | RayMasks.ENVIRONMENT | RayMasks.GROUND | RayMasks.GROUND2 | RayMasks.ITEM | RayMasks.RESOURCE | RayMasks.STRUCTURE | RayMasks.STRUCTURE_INTERACT | RayMasks.WATER);
-            if (Physics.Raycast(new Vector3(Position.x, Position.y + 200, Position.z), Vector3.down, out RaycastHit Hit, 250, layerMasks))
+            if (Physics.Raycast(new Vector3(Position.x, Position.y + 1024, Position.z), Vector3.down, out RaycastHit Hit, Mathf.Infinity))
             {
                 return Hit.point;
             }
